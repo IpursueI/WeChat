@@ -6,6 +6,7 @@
 #include <map>
 #include <regex>
 #include <tinyxml.h>
+#include <ctime>
 
 #include <cgicc/CgiDefs.h> 
 #include <cgicc/Cgicc.h> 
@@ -17,16 +18,18 @@
 using namespace std;
 using namespace cgicc;
 
+//构造返回的数据格式
 string createTextReplyData(string &msgType, string &toUserName, string &fromUserName, string &content){
 	
 	
 	string data = "<xml><ToUserName><![CDATA["+fromUserName+"]]></ToUserName><FromUserName><![CDATA["+toUserName
-		+"]]></FromUserName><CreateTime>123456</CreateTime><MsgType><![CDATA["+"text"
+		+"]]></FromUserName><CreateTime>"+to_string(time(NULL))+"</CreateTime><MsgType><![CDATA["+"text"
 		+"]]></MsgType><Content><![CDATA["+content+"]]></Content></xml>";
 
 	return data;
 }
 
+//对post过来的文本消息进行处理
 void processText(std::map<string, string> &data){
 
 	string msgType, toUserName, fromUserName, content;
@@ -47,6 +50,31 @@ void processText(std::map<string, string> &data){
 	cout<<createTextReplyData(msgType, toUserName, fromUserName, content);
 }
 
+
+void processEvent(std::map<string, string> &data){
+
+	string msgType, toUserName, fromUserName, event;
+	
+	msgType = data["MsgType"];
+
+	if(data.find("ToUserName") != data.end()){
+		toUserName = data["ToUserName"];
+	}
+	if(data.find("FromUserName") != data.end()){
+		fromUserName = data["FromUserName"];
+	}
+	if(data.find("Event") != data.end()){
+		event = data["Event"];
+	}
+
+	cout<<"Content-type:text/text/html\r\n\r\n";
+
+	if(event == "subscribe"){
+		string content = "感谢订阅公众号，目前还处在开发测试阶段。有新功能添加后会第一时间通知您，敬请期待。";
+		cout<<createTextReplyData(msgType, toUserName, fromUserName, content);
+	}
+}
+//对post过来的xml消息进行解析，并存储到子典当中
 void parseRawData(const string& data){
 
 	//cgicc中也包含map，不加std会冲突
@@ -66,11 +94,16 @@ void parseRawData(const string& data){
 	if(resData.find("MsgType") != resData.end()){
 		if(resData["MsgType"] == "text"){
 			processText(resData);
+		}else if(resData["MsgType"] == "event"){ 
+			cout<<"Content-type:text/text/html\r\n\r\n";
+			cout<<"aaa"<<endl;
+			//processEvent(resData);
 		}
 	}
 
 }
 
+//服务器验证
 void processGet(Cgicc &formData) {
 	
 	cout<<"Content-type:text/text/html\r\n\r\n";
@@ -107,7 +140,7 @@ void processGet(Cgicc &formData) {
 	}
 }
 
-
+//处理post消息
 void processPost(const Cgicc &formData){
 	
 	//通过CgiEnvironment获取所有的PostData
