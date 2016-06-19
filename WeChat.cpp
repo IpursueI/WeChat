@@ -85,10 +85,17 @@ void processEvent(std::map<string, string> &data){
 
 	if(event == "subscribe"){
 		cout<<"Content-type:text/text/html\r\n\r\n";
-		string content = "感谢订阅公众号，目前还处在开发测试阶段。有新功能添加后会第一时间通知您，敬请期待。";
+		string content = "感谢订阅公众号，目前还处在开发测试阶段。\n\
+目前支持的功能有：\n\
+1.天气查询：例如“天气 深圳”\n\
+有新功能添加后会第一时间通知您，敬请期待。";
 		cout<<createTextReplyData(msgType, toUserName, fromUserName, content);
+	}else {
+		cout<<"Content-type:text/text/html\r\n\r\n";
+		cout<<createTextReplyData(msgType, toUserName, fromUserName, "目前不支持处理该事件");
 	}
 }
+
 //对post过来的xml消息进行解析，并存储到子典当中
 void parseRawData(const string& data){
 
@@ -102,7 +109,12 @@ void parseRawData(const string& data){
 	TiXmlElement *element = rootElement->FirstChildElement();
 
 	while(element){
-		resData[element->ValueStr()] = element->GetText();
+		const char *value = element->Value();
+		const char *text = element->GetText();
+		//bug 修改，要验证结果是否为空
+		if(value && text){
+			resData[value] = text;
+		}
 		element = element->NextSiblingElement();
 	}
 	
@@ -110,13 +122,14 @@ void parseRawData(const string& data){
 		if(resData["MsgType"] == "text"){
 			processText(resData);
 		}else if(resData["MsgType"] == "event"){ 
-			cout<<"Content-type:text/text/html\r\n\r\n";
-			cout<<createTextReplyData(resData["MsgType"], resData["ToUserName"], resData["FromUserName"], "为何不能处理event类型消息");
-			//processEvent(resData);
+			processEvent(resData);
 		}else {
 			cout<<"Content-type:text/text/html\r\n\r\n";
 			cout<<createTextReplyData(resData["MsgType"], resData["ToUserName"], resData["FromUserName"], "暂不支持该消息类型");
 		}
+	}else {
+		cout<<"Content-type:text/text/html\r\n\r\n";
+		cout<<createTextReplyData(resData["MsgType"], resData["ToUserName"], resData["FromUserName"], "无法检测消息类型");
 	}
 
 }
@@ -184,4 +197,3 @@ int main() {
 
 	return 0;
 }
-//sudo g++ -std=c++11 -o WeChat.cgi WeChat.cpp CheckSignature.cpp -lcgicc -lssl -lcrypto -ltinyxml

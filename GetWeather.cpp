@@ -50,6 +50,10 @@ string parseJson(string strJson){
 		res += "城市：";
 		res += detail.get("city","unknown").asString();
 		res += '\n';
+		
+		res += "时间：";
+		res += detail.get("date","unknown").asString();
+		res += '\n';
 
 		res += "天气：";
 		res += detail.get("weather","unknown").asString();
