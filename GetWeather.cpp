@@ -33,6 +33,41 @@ size_t write_data(void *ptr, size_t size, size_t nmemb, struct url_data *data){
 	return size * nmemb;
 }
 
+string parseJson(string strJson){
+	Json::Value root;
+	Json::Reader reader;
+	bool parsingSuccessful = reader.parse(strJson.c_str(), root);
+	if(!parsingSuccessful){
+	//	std::cout<<"Failed to parse"<<reader.getFormattedErrorMessages();
+		return 0;
+	}
+	string requestRes =  root.get("errMsg","A Default Value").asString();
+	if(requestRes == "success"){
+		Json::Value detail = root["retData"];
+
+		string res = "";
+
+		res += "城市：";
+		res += detail.get("city","unknown").asString();
+		res += '\n';
+
+		res += "天气：";
+		res += detail.get("weather","unknown").asString();
+		res += '\n';
+
+		res += "最低温度：";
+		res += detail.get("l_tmp","unknown").asString();
+		res += '\n';
+
+		res += "最高温度：";
+		res += detail.get("h_tmp","unknown").asString();
+
+		return res;
+	}
+
+	return "failed";
+}
+
 string getWeather(const string &city){
 	CURL *curl;
 	CURLcode res;
@@ -51,7 +86,9 @@ string getWeather(const string &city){
 		struct curl_slist *chunk = NULL;
 		chunk = curl_slist_append(chunk, "apikey:e6c194f817d5ce9880eedc2a7eb694cc");
 		res = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
-		curl_easy_setopt(curl, CURLOPT_URL, "http://apis.baidu.com/apistore/weatherservice/cityname?cityname=北京");
+		string getUrl = "http://apis.baidu.com/apistore/weatherservice/cityname?cityname=";
+		getUrl += city;
+		curl_easy_setopt(curl, CURLOPT_URL, getUrl.c_str());
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
 		curl_easy_setopt(curl, CURLOPT_HEADER, 0L);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
@@ -64,29 +101,13 @@ string getWeather(const string &city){
 		curl_easy_cleanup(curl);
 		curl_slist_free_all(chunk);
 
-		return data.data;
+		return parseJson(data.data);
 	}
 
 }
 
-string parseJson(string strJson){
-	Json::Value root;
-	Json::Reader reader;
-	bool parsingSuccessful = reader.parse(strJson.c_str(), root);
-	if(!parsingSuccessful){
-	//	std::cout<<"Failed to parse"<<reader.getFormattedErrorMessages();
-		return 0;
-	}
-	string requestRes =  root.get("errMsg","A Default Value").asString();
-	if(requestRes == "success"){
-		Json::Value detail = root.get("retData","failed");
-		return detail.get("weather","unknown").asString();
-	}
-
-	return "failed";
-}
-
+/*
 int main(){
 	cout<<parseJson(getWeather("深圳"))<<endl;
 	return 0;
-}
+}*/

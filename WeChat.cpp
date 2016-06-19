@@ -14,12 +14,13 @@
 #include <cgicc/HTMLClasses.h>  
 
 #include "CheckSignature.h"
+#include "GetWeather.h"
 
 using namespace std;
 using namespace cgicc;
 
 //构造返回的数据格式
-string createTextReplyData(string &msgType, string &toUserName, string &fromUserName, string &content){
+string createTextReplyData(const string &msgType, const string &toUserName, const string &fromUserName, const string &content){
 	
 	
 	string data = "<xml><ToUserName><![CDATA["+fromUserName+"]]></ToUserName><FromUserName><![CDATA["+toUserName
@@ -46,8 +47,22 @@ void processText(std::map<string, string> &data){
 		content = data["Content"];
 	}
 
-	cout<<"Content-type:text/text/html\r\n\r\n";
-	cout<<createTextReplyData(msgType, toUserName, fromUserName, content);
+	size_t spaceIdx = content.find(" ");
+	if(spaceIdx != string::npos){
+		string function = content.substr(0, spaceIdx+1);
+		string funcContent = content.substr(spaceIdx+1, content.size()-spaceIdx-1);
+		
+		if(function == "天气 "){
+			cout<<"Content-type:text/text/html\r\n\r\n";
+			cout<<createTextReplyData(msgType, toUserName, fromUserName, getWeather(funcContent));
+		}else{
+			cout<<"Content-type:text/text/html\r\n\r\n";
+			cout<<createTextReplyData(msgType, toUserName, fromUserName, "不支持该功能");
+		}
+	}else{
+		cout<<"Content-type:text/text/html\r\n\r\n";
+		cout<<createTextReplyData(msgType, toUserName, fromUserName, "输入格式有误");
+	}
 }
 
 
@@ -67,9 +82,9 @@ void processEvent(std::map<string, string> &data){
 		event = data["Event"];
 	}
 
-	cout<<"Content-type:text/text/html\r\n\r\n";
 
 	if(event == "subscribe"){
+		cout<<"Content-type:text/text/html\r\n\r\n";
 		string content = "感谢订阅公众号，目前还处在开发测试阶段。有新功能添加后会第一时间通知您，敬请期待。";
 		cout<<createTextReplyData(msgType, toUserName, fromUserName, content);
 	}
@@ -96,8 +111,11 @@ void parseRawData(const string& data){
 			processText(resData);
 		}else if(resData["MsgType"] == "event"){ 
 			cout<<"Content-type:text/text/html\r\n\r\n";
-			cout<<"aaa"<<endl;
+			cout<<createTextReplyData(resData["MsgType"], resData["ToUserName"], resData["FromUserName"], "为何不能处理event类型消息");
 			//processEvent(resData);
+		}else {
+			cout<<"Content-type:text/text/html\r\n\r\n";
+			cout<<createTextReplyData(resData["MsgType"], resData["ToUserName"], resData["FromUserName"], "暂不支持该消息类型");
 		}
 	}
 
