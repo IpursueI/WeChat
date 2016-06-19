@@ -89,7 +89,7 @@ void processEvent(std::map<string, string> &data){
 		cout<<createTextReplyData(msgType, toUserName, fromUserName, content);
 	}
 }
-//对post过来的xml消息进行解析，并存储到子典当中
+//对post过来的xml消息进行解析，并存储到字典当中
 void parseRawData(const string& data){
 
 	//cgicc中也包含map，不加std会冲突
